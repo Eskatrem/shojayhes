@@ -35,9 +35,8 @@ startY= 50;
 function isLastRow(y, color) {
     if(color === "b") {
         return y === 0;
-    }else {
-        return y === 8;
     }
+    return y === 8;
 }
 
 //deletes all the pieces to drop (depends on the color)
