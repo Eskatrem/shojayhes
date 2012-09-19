@@ -23,8 +23,16 @@ ToDrop = {b:{g:0,s:0,l:0,n:0,r:0,b:0,p:0},
 
 width = 60;
 
-//tells if y is the last row (depends on the color)
-function lastRank(y, color) {
+init = 50;
+
+textH = 20;
+
+startX= 50;
+startY= 50;
+
+
+//tells if y is the last row (depends on the color) - rows go from 0 to 8
+function isLastRow(y, color) {
     if(color === "b") {
         return y === 0;
     }else {
@@ -34,12 +42,10 @@ function lastRank(y, color) {
 
 //deletes all the pieces to drop (depends on the color)
 function eraseToDrop(color) {
-    var init = 50;
     var y = 600;
     if(color === "b") {
         y = 20;
     }
-    var textH = 20;
     var i = 0;
     var tmpPiece;
     var tmpText;
@@ -75,7 +81,7 @@ function makeDrop(piece,color) {
         else if(board[squareY][squareX]!==0) {
             dropCorrect = false;
         } else if(piece === "p" || piece === "l") {
-            if(lastRank(squareY,color)) {
+            if(isLastRow(squareY,color)) {
                 dropCorrect = false;
             } else if(piece === "p") {
                 //ensure that there is no pawn on the same column
@@ -105,7 +111,7 @@ function makeDrop(piece,color) {
 function makePieceToDrop(color,piece, count,n,paper) {
 //    alert("piece to drop: " + piece);
     var h;
-    var init = 50;
+    //var init = 50;
     if(color === "b") {
         h=20;
     }else {
@@ -141,15 +147,13 @@ function sign(x) {
 //draw the board. paper is a Raphael canvas
 function drawBoard(paper) {
     //var paper = Raphael(10,50,700,700);
-    var width = 60;
-    var length = 60;
-    var startX= 50;
-    var startY= 50;
-    //draw 9*9 squares...
+    //var width = 60;
+    //var length = 60;
+     //draw 9*9 squares...
     //var i,j;
     for(i=0; i<9;i++) {
 	for(j=0; j<9;j++) {
-	    paper.rect(startX+i*width, startY+j*length,width,length);
+	    paper.rect(startX+i*width, startY+j*width,width,width);
 	}
     }
 }
@@ -170,25 +174,6 @@ function initBoard() {
     return board;
 }
 
-//deprecated
-function drawPiece(piece, paper) {
-    if(piece === 0) {
-	return;
-    }
-    
-}
-
-////////////////////////////////////////////////////////
-// function squareToCoordinates(x, y) {               //
-//     var width = 60;                                //
-//     var length = 60;                               //
-//     var startX=50;                                 //
-//     var startY=50;                                 //
-//     var coord = [startX+length*x, startY+width*y]; //
-//     return coord;                                  //
-// }                                                  //
-////////////////////////////////////////////////////////
-
 
 //converts a square to coordinates
 function sqToCoord(x) {
@@ -199,9 +184,9 @@ function sqToCoord(x) {
 
 //converts coordinate into square
 function coordToSquare(x) {
-    var start = 50;
-    var width = 60;
-    return Math.floor((x-start)/width);
+    //var start = 50;
+    //var width = 60;
+    return Math.floor((x-init)/width);
 }
 
 //when a piece is captured, this function adds it into the ToDrop variable
