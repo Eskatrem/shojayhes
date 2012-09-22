@@ -138,11 +138,6 @@ function drawToDrop(toDrop,color){
     }
 }
 
-//returns the sign of x
-function sign(x) {
-    var res = x? x<0? -1:1:0;
-    return res;
-}
 
 //draw the board. paper is a Raphael canvas
 function drawBoard(paper) {
