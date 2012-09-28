@@ -1,6 +1,22 @@
 Nsquares = 9;
 Pieces = ["p","l","n","s","g","k","b","r","pl","pn","ps","t","d","h"];
 
+InitPosition = [[{p:"b", col:"b"},0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0],
+                [{p:"r",col:"b"},0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,{p:"b", col:"r"}]];
+//ToDropB = {};
+//ToDropR = {};
+
+ToDrop = {
+    b:{},
+    r:{}
+};
 
 //checks that there is no pieces between the squares (ox,oy) and (nx,ny)
 function inArray(arr, obj) {
@@ -29,47 +45,61 @@ function getOppositeColor(color) {
 }
 
 //addition for vectors. x and y need to have the same length
-function add(x,y) {
-    var n = x.length;
-    if(y.length !== n) {
-        return undefined;
-    }
-    var i, res = [];
-    for(i=0;i<n;i++) {
-        res.push(x[i]+y[i]);
-    }
+function add(v1,v2) {
+    var res = {
+        x:v1.x + v2.x,
+        y:v1.y+v2.y
+    };
     return res;
+    // var n = x.length;
+    // if(y.length !== n) {
+    //     return undefined;
+    // }
+    // var i, res = [];
+    // for(i=0;i<n;i++) {
+    //     res.push(x[i]+y[i]);
+    // }
+    // return res;
 }
 
 //tells if a square (represented by the coordinates [x,y]) belongs to the board
 function isInBoard(square) {
     var x,y;
-    x = square[0];
-    y = square[1];
+    x = square.x;
+    y = square.y;
     return 0<x && x < nSquares && 0<y && y<nSquares;
+}
+
+function getPiece(position,square) {
+    var x = square.x;
+    var y = square.y;
+    console.log("x = " + x, " y = " + y);
+    return position[y][x];
 }
 
 //returns all the square from where a piece "piece" of color "color" controls the square [x][y] (on an empty board).
 function reverseMove(x,y,piece,color) {
     var dir;
-    var initSquare = [x,y];
+    var initSquare = {x:x,y:y};
+    var bishopDir = [{x:-1,y:1},{x:-1,y:-1},{x:1,y:1},{x:1,y:-1}];
+    var rookDir = [{x:-1,y:0},{x:1,y:0},{x:0,y:-1},{x:0,y:1}];
     if(color === "b") {
         dir = 1;
     }
     else {
-        dir = -1
+        dir = -1;
     }
     if(piece === "p") {
         var newY = y-dir;
         if(newY > 0 && newY < nSquares) {
-            return [[[x,newY]]];
+            return [[{x:x,y:newY}]];
         }
         return [];
     } else if(piece === "l") {
         var res = [];
         var k = 1;
         while(y+k*dir>0 && y+k*dir<nSquares) {
-            res.push([x,y+k*dir]);
+            res.push({x:x,y:y+k*dir});
             k++;
         }
         return [res];
@@ -81,14 +111,14 @@ function reverseMove(x,y,piece,color) {
         var d1 =[];
         var d2 = [];
         if(x+1<nSquares) {
-            d1.push([x+1,newY])
+            d1.push({x:x+1,y:newY});
         }
         if(x-1>0) {
-            d2.push([x-1,newY]);
+            d2.push({x:x-1,y:newY});
         }
         return [d1,d2];
     } else if (piece === "s") {
-        var silverDirs = [[-1,-dir],[1,-dir],[-1,dir],[0,dir],[1,dir]];
+        var silverDirs = [{x:-1,y:-dir},{x:1,y:-dir},{x:-1,y:dir},{x:0,y:dir},{x:1,y:dir}];
         var newSquare;
         res = [];
         for(sd in silverDirs) {
@@ -99,7 +129,7 @@ function reverseMove(x,y,piece,color) {
         }
         return res;
     } else if(inArray(["g","pl","pn","ps","t"],piece)) {
-        var goldDir = [[0,-dir],[-1,0],[1,0],[-1,dir],[0,dir],[1,dir]];
+        var goldDir = [{x:0,y:-dir},{x:-1,y:0},{x:1,y:0},{x:-1,y:dir},{x:0,y:dir},{x:1,y:dir}];
         var newSquare;
         var res = [];
         for(gd in goldDir) {
@@ -110,7 +140,7 @@ function reverseMove(x,y,piece,color) {
         }            
         return res;
     } else if(piece === "b") {
-        var bishopDir = [[-1,1],[-1,-1],[1,1],[1,-1]];
+        
         var newSquare;
         var newDir;
         var res = [];
@@ -125,7 +155,7 @@ function reverseMove(x,y,piece,color) {
         }
         return res;
     } else if(piece === "r") {
-        var rookDir = [[-1,0],[1,0],[0,-1],[0,1]];
+
         var newSquare;
         var newDir;
         var res = [];
@@ -140,7 +170,7 @@ function reverseMove(x,y,piece,color) {
         }
         return res;
     } else if(piece === "h") {
-        var bishopDir = [[-1,1],[-1,-1],[1,1],[1,-1]];
+        //var bishopDir = [[-1,1],[-1,-1],[1,1],[1,-1]];
         var newSquare;
         var newDir;
         var res = [];
@@ -153,7 +183,7 @@ function reverseMove(x,y,piece,color) {
             }
             res.push(newDir);
         }
-        var horseDir = [[-1,0],[1,0],[0,-1],[0,1]];
+        var horseDir = [{x:-1,y:0},{x:1,y:0},{x:0,y:-1},{x:0,y:1}];
         for(hd in horseDir) {
             newSquare = add(initSquare,hd);
             if(isInBoard(newSquare)) {
@@ -162,7 +192,7 @@ function reverseMove(x,y,piece,color) {
         }
         return res;
     } else if(piece === "d") {
-        var rookDir = [[-1,0],[1,0],[0,-1],[0,1]];
+
         var newSquare;
         var newDir;
         var res = [];
@@ -175,7 +205,7 @@ function reverseMove(x,y,piece,color) {
             }
             res.push(newDir);
         }
-        var dragonDir = [[-1,-1],[-1,1],[1,-1],[1,1]];
+        var dragonDir = [{x:-1,y:-1},{x:-1,y:1},{x:1,y:-1},{x:1,y:1}];
         for(dd in dragonDir) {
             newSquare = add(initSquare, dd);
             if(isInBoard(newSquare)) {
@@ -184,7 +214,7 @@ function reverseMove(x,y,piece,color) {
         }
         return res;
     } else if(piece === "k") {
-        var kingDir = [[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]];
+        var kingDir = [{x:-1,y:-1},{x:-1,y:0},{x:-1,y:1},{x:0,y:1},{x:1,y:1},{x:1,y:0},{x:1,y:-1},{x:0,y:-1}];
         var newSquare;
         res = [];
         for(kd in kingDir) {
@@ -264,12 +294,20 @@ function checkDropValidity(initPosition,to,color,toDrop,piece) {
         }
         return !checkMating();
     }
+    return true;
 }
 
 //return true if a move is legal, false otherwise
-function checkMoveValidity(initPositionm, from, to, color, piece ) {
+function checkMoveValidity(initPosition, from, to) {
+    console.log("checkMoveValidity: from = " + from + " to = " + to);
+    var  piece;
+    piece = getPiece(initPosition, from);
     var dir = 1;
-    if(color === "b" ) {
+    if(piece.col !== Color) {
+        alert("not your turn");
+        return false;
+    }
+    if(piece.col === "b" ) {
         dir = -1;
     }
     if(piece.p === "p") {
@@ -291,7 +329,14 @@ function checkMoveValidity(initPositionm, from, to, color, piece ) {
         return (from.x === to.x || from.y === to.y);
     }
     if(piece.p === "b") {
-        return abs(to.x - from.x) === abs(to.y - from.y);
+        console.log("checking for bishop move");
+        console.log("to = " + to + " from = " + from);
+        console.log("to.x = " + to.x );
+        var moveOK = abs(to.x - from.x) === abs(to.y - from.y);
+        if(!moveOK) {
+            alert("illegal move!");
+        }
+        return moveOK;
     }
     if(piece.p === "k") {
         return abs(to.x - from.x) <= 1 && abs(to.y-from.y)<=1;
@@ -302,22 +347,29 @@ function checkMoveValidity(initPositionm, from, to, color, piece ) {
     if(piece.p === "d") {
         return (abs(to.x - from.x) <= 1 && abs(to.y-from.y)<=1)||(from.x === to.x || from.y === to.y);
     }
+    return false;
 }
 
 //just makes a move, without worrying about its legality
 function makeMove(initPosition, toDrop, from, to, drop, piece) {
     var newPosition = initPosition;
     var newToDrop = toDrop;
-    if(!drop) {
+//    var color = piece.col;
+    console.log("makeMove: piece = " + piece);
+    if(drop === undefined) {
+        piece = initPosition[from.y][from.x];
+        color = piece.col;
         newPosition[from.y][from.x] = 0;
+        
 
     } else {
         newToDrop[color][piece.p]--;
     }
     newPosition[to.y][to.x] = piece;    
+    console.log("initPosition[to.y][to.x] = " + initPosition[to.y][to.x]);
     if(initPosition[to.y][to.x] !== 0) {
         var captured = initPosition[to.y][to.x];
-        newToDrop[color][captured.p]++;
+//        newToDrop[color][captured.p]++;
     }
     var res = {position: newPosition, toDrop: newToDrop};
     return res;
@@ -339,7 +391,7 @@ function findPiece(position, piece) {
     }
     return undefined;
 }
-x
+
 //return true if the king of the side "color" is attacked, false otherwise
 function isCheck(position,color) {
     var king = {
@@ -406,4 +458,11 @@ function validateMove(initPosition, toDrop, from, to, color,piece) {
         return checkDropValidity(initPosition, to, color, toDrop);
     }
     return true;
+}
+
+
+function updatePosition(from, to, drop, piece) {
+
+    var res = makeMove(position, ToDrop, from, to, drop, piece);
+    position = res.position;
 }
