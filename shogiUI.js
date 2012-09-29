@@ -14,7 +14,7 @@ YtoDropR = 650;
 //variables related to the state of the game (current position, color to play, list of pieces to drop)
 position = InitPosition;
 Color = "b";
-
+pieces = ["p","l","n","s","g","b","r"];
 
 function switchColor() {
     if(Color === "b") {
@@ -48,7 +48,8 @@ function eraseBoard() {
 
 //erases the graphical representation of the list of the pieces to drop, for a given color.
 function eraseToDrop(toDrop, color) {
-    var pieces = keys(toDrop);
+    console.log(toDrop);
+    //var pieces = ["p","l","n","s","g","b","r"];//keys(toDrop[color]);
     var y = YtoDropR;
     if(color === "b") {
         y = YtoDropB;
@@ -58,10 +59,13 @@ function eraseToDrop(toDrop, color) {
     var dx = 50;
     var tmp1, tmp2;
     for(piece in pieces) {
-        tmp1 = paper.getElementsByPoint(x,y)[0];
-        tmp1.remove();
-        tmp2 = paper.getElementsByPoint(x,y+dy)[0];
-        tmp2.remove();
+        if(toDrop[color][piece] >0) {
+            tmp1 = paper.getElementsByPoint(x,y)[0];
+            tmp1.remove();
+            tmp2 = paper.getElementsByPoint(x,y+dy)[0];
+            tmp2.remove();
+            x = x + dx;
+        }
     }
 }
 
@@ -125,9 +129,10 @@ function upMove() {
         var centeredCoords = squareToCoord(endSquare);
         this.attr({x:centeredCoords[0],y:centeredCoords[1]});
         eraseBoard();
-        
+        eraseToDrop(ToDrop,Color);
         updatePosition(startSquare, endSquare);
         drawPosition(position);
+        drawToDrop(ToDrop,Color);
         switchColor();
     }
     else {
@@ -136,7 +141,26 @@ function upMove() {
 }
 
 function upDrop() {
-    
+    var endSquare;
+    var x,y;
+    x =this.attr("x");
+    y = this.attr("y");
+    endSquare = coordToSquare([x, y]);
+    var centeredCoords = coordToSquare(endSquare);
+    console.log("upMove: this = " + this);
+    this.attr({x:centeredCoords.x,y:centeredCoords.y});
+    var piece = {p:this.attr("text"),col:Color};
+    var dropOK = checkDropValidity(position,endSquare,Color,ToDrop[Color],piece);
+    if(dropOK) {
+        eraseBoard();
+        eraseToDrop(ToDrop[Color],Color);
+        updatePosition(undefined,endSquare,true,piece);
+        drawPosition(position);
+        drawToDrop(ToDrop,Color);
+        switchColor();
+    } else {
+        this.attr({x:ox,y:oy});
+    }
 }
 
 //puts the pieces given in position on the board. position has to be a 9*9 array containing some pieces
@@ -162,20 +186,25 @@ function drawPosition(position) {
 //draws the pieces that are to drop.
 //toDrop has to be a hash map of the form: {r:1, p:3}
 function drawToDrop(toDrop,color) {
-    var pieces = keys(toDrop);
+    //var pieces = keys(toDrop);
     var y = YtoDropR;
     var x = 50;
     var n;
-    var dy = 40;
+    var dy = 20;
     var dx = 50;
+    var p;
     if(color === "b") {
         y = YtoDropB;
     }
     for(piece in pieces) {
-        n = toDrop[piece];
-        paper.text(x,y,"text").attr({text:piece});
-        papwe.text(x,y+dy,"text").attr({text: n});
-        x = x +dx;
+        n = toDrop[color][pieces[piece]];
+        if(n>0) {
+            p = paper.text(x,y,"text").attr({text:pieces[piece],cursor:"move"});
+            p.drag(move,start,upDrop);
+            paper.text(x,y+dy,"text").attr({text: n});
+            x = x +dx;    
+        }
+        
     }
 }
 

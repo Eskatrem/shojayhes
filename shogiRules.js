@@ -1,5 +1,8 @@
 Nsquares = 9;
 Pieces = ["p","l","n","s","g","k","b","r","pl","pn","ps","t","d","h"];
+PromotablePieces = ["p","l","n","s","b","r"];
+PromotedPieces = ["pl","pn","ps","t","h","d"];
+OneDirPieces = ["p", "l", "n"];
 
 InitPosition = [[{p:"b", col:"b"},0,0,0,0,0,0,0,0],
                 [0,0,0,0,0,0,0,0,0],
@@ -8,15 +11,67 @@ InitPosition = [[{p:"b", col:"b"},0,0,0,0,0,0,0,0],
                 [0,0,0,0,0,0,0,0,0],
                 [0,0,0,0,0,0,0,0,0],
                 [0,0,0,0,0,0,0,0,0],
-                [0,0,0,0,0,0,0,0,0],
+                [{p:"p",col:"b"},0,0,0,0,0,0,0,0],
                 [0,0,0,0,0,0,0,0,{p:"b", col:"r"}]];
 //ToDropB = {};
 //ToDropR = {};
 
 ToDrop = {
-    b:{},
-    r:{}
+    b:{p:0,l:0,n:0,s:0,g:0,b:0,r:0},
+    r:{p:0,l:0,n:0,s:0,g:0,b:0,r:0}
 };
+
+//tells whether a piece *has* to promote
+function hasToPromote(piece, to) {
+    if(!inArray(OneDirPieces,piece.p)) {
+        console.log("not a one direction piece...");
+        return false;
+    }
+    if(inArray(["p","l"],piece.p) && to.y === lastRow(piece.col)) {
+        return true;
+    }
+    if(piece.p === "n" && inArray(lastRows(piece.col,2))) {
+        return true;
+    }
+    return false;
+}
+
+//tells whether a piece can promote
+function canPromote(piece, from, to) {
+    if(!inArray(PromotablePieces,piece.p)) {
+        return false;
+    }
+    var promotionZone = lastRows(piece.col, 3);
+    return inArray(promotionZone,to.y) || inArray(promotionZone, from.y);
+}
+
+//return the promoted version of a piece
+function promote(piece) {
+    var p = piece.p;
+    var col = piece.col;
+    var promoted;
+    if(p === "p") {
+        promoted = "t";
+    }
+    if(p === "l") {
+        promoted = "pl";
+    }
+    if(p === "n") {
+        promoted = "pn";
+    }
+    if(p === "s") {
+        promoted = "ps";
+    }
+    if(p === "b") {
+        promoted = "h";
+    }
+    if(p === "r") {
+        promoted = "d";
+    }
+    return {
+      p:promoted, col:col  
+    };
+}
 
 //checks that there is no pieces between the squares (ox,oy) and (nx,ny)
 function inArray(arr, obj) {
@@ -253,19 +308,19 @@ function checkNoGoThrough(ox,oy,nx,ny) {
 
 function lastRow(color) {
     if(color === "b") {
-        return 0;
+        return 8;
     }
-    return 8;
+    return 0;
 }
 
 function lastRows(color,n) {
     var init, step;
-    if(color === "b" ) {
-        init = 8;
-        step = -1;
-    } else {
+    if(color === "r" ) {
         init = 0;
         step = 1;
+    } else {
+        init = 8;
+        step = -1;
     }
     res = [];
     for(i=0;i<n;i++) {
@@ -278,6 +333,7 @@ function checkMating() {
     return false;
 }
 
+//given the position initPosition, ensure that droping the piece "piece" on the square "to" is legal
 function checkDropValidity(initPosition,to,color,toDrop,piece) {
     if(!inArray(["n","l","p"],piece.p)) {
         return true;
@@ -307,7 +363,7 @@ function checkMoveValidity(initPosition, from, to) {
         alert("not your turn");
         return false;
     }
-    if(piece.col === "b" ) {
+    if(piece.col === "r" ) {
         dir = -1;
     }
     if(piece.p === "p") {
@@ -350,6 +406,32 @@ function checkMoveValidity(initPosition, from, to) {
     return false;
 }
 
+//returns the non-promoted version of a piece
+function getOriginalPiece(piece) {
+    if(inArray(["p","l","n","s","g","r","b"],piece)) {
+        return piece;
+    }
+    if(piece === "t") {
+        return "p";
+    }
+    if(piece === "pl") {
+        return "l";
+    }
+    if(piece === "pn") {
+        return "n";
+    }
+    if(piece === "ps") {
+        return "s";
+    }
+    if(piece === "h") {
+        return "b";
+    }
+    if(piece === "d") {
+        return "r";
+    }
+    return undefined;
+}
+
 //just makes a move, without worrying about its legality
 function makeMove(initPosition, toDrop, from, to, drop, piece) {
     var newPosition = initPosition;
@@ -357,20 +439,35 @@ function makeMove(initPosition, toDrop, from, to, drop, piece) {
 //    var color = piece.col;
     console.log("makeMove: piece = " + piece);
     if(drop === undefined) {
+        //in this case: no drop
         piece = initPosition[from.y][from.x];
         color = piece.col;
+        if(hasToPromote(piece, to)) {
+            piece = promote(piece);
+        } else if(canPromote(piece, from, to)) {
+            var promotion = confirm("Promote piece?");
+            if(promotion) {
+                piece = promote(piece);
+            }
+        }
+        if(initPosition[to.y][to.x] !==0) {
+            //in this case a piece is been captured...
+            var captured = initPosition[to.y][to.x].p;
+            var newPiece = getOriginalPiece(captured);
+            newToDrop[color][newPiece]++;
+        }
         newPosition[from.y][from.x] = 0;
-        
-
     } else {
-        newToDrop[color][piece.p]--;
+        console.log("makeMove: piece = " + piece);
+        newToDrop[Color][piece.p]--;
+        newPosition[to.y][to.x] = piece;
     }
     newPosition[to.y][to.x] = piece;    
     console.log("initPosition[to.y][to.x] = " + initPosition[to.y][to.x]);
-    if(initPosition[to.y][to.x] !== 0) {
-        var captured = initPosition[to.y][to.x];
+//    if(initPosition[to.y][to.x] !== 0) {
+//        var captured = initPosition[to.y][to.x];
 //        newToDrop[color][captured.p]++;
-    }
+//    }
     var res = {position: newPosition, toDrop: newToDrop};
     return res;
 }
@@ -465,4 +562,5 @@ function updatePosition(from, to, drop, piece) {
 
     var res = makeMove(position, ToDrop, from, to, drop, piece);
     position = res.position;
+    ToDrop = res.toDrop;
 }
