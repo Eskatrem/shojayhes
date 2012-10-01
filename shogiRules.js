@@ -4,15 +4,67 @@ PromotablePieces = ["p","l","n","s","b","r"];
 PromotedPieces = ["pl","pn","ps","t","h","d"];
 OneDirPieces = ["p", "l", "n"];
 
-InitPosition = [[{p:"b", col:"b"},0,0,0,0,0,0,0,0],
+bl = {
+    p:"l",col:"b"
+};
+bn = {
+    p:"n", col:"b"
+};
+bs = {
+    p:"s", col:"b"
+};
+bg = {
+    p:"g",col:"b"
+};
+bk = {
+    p:"k",col:"b"  
+};
+bb = {
+    p:"b", col:"b"
+};
+br = {
+    p:"r", col:"b"
+};
+bp = {
+    p:"p", col:"b"
+};
+
+
+rl = {
+    p:"l",col:"r"
+};
+rn = {
+    p:"n", col:"r"
+};
+rs = {
+    p:"s", col:"r"
+};
+rg = {
+    p:"g",col:"r"
+};
+rk = {
+    p:"k",col:"r"  
+};
+rb = {
+    p:"b", col:"r"
+};
+rr = {
+    p:"r", col:"r"
+};
+rp = {
+    p:"p", col:"r"
+};
+
+
+InitPosition = [[bl,bn,bs,bg,bk,bg,bs,bn,bl],
+                [0,br,0,0,0,0,0,bb,0],
+                [bp,bp,bp,bp,bp,bp,bp,bp,bp],
                 [0,0,0,0,0,0,0,0,0],
-                [{p:"r",col:"b"},0,0,0,0,0,0,0,0],
                 [0,0,0,0,0,0,0,0,0],
                 [0,0,0,0,0,0,0,0,0],
-                [0,0,0,0,0,0,0,0,0],
-                [0,0,0,0,0,0,0,0,0],
-                [{p:"p",col:"b"},0,0,0,0,0,0,0,0],
-                [0,0,0,0,0,0,0,0,{p:"b", col:"r"}]];
+                [rp,rp,rp,rp,rp,rp,rp,rp,rp],
+                [0,rb,0,0,0,0,0,rr,0],
+                [rl,rn,rs,rg,rk,rg,rs,rn,rl]];
 //ToDropB = {};
 //ToDropR = {};
 
@@ -353,19 +405,26 @@ function checkDropValidity(initPosition,to,color,toDrop,piece) {
     return true;
 }
 
+function getDirection(color) {
+    if(color === "r") {
+        return -1;
+    }
+    return 1;
+}
+
 //return true if a move is legal, false otherwise
 function checkMoveValidity(initPosition, from, to) {
     console.log("checkMoveValidity: from = " + from + " to = " + to);
     var  piece;
     piece = getPiece(initPosition, from);
-    var dir = 1;
+    var dir = getDirection(piece.col);
     if(piece.col !== Color) {
         alert("not your turn");
         return false;
     }
-    if(piece.col === "r" ) {
-        dir = -1;
-    }
+    //if(piece.col === "r" ) {
+       // dir = -1;
+    //}
     if(piece.p === "p") {
         return (from.x === to.x )&& ((to.y-from.y) === dir);
     }
@@ -373,7 +432,15 @@ function checkMoveValidity(initPosition, from, to) {
         return (from.x === to.x) && (sign(to.y - from.y) === dir);
     }
     if(piece.p ==="n") {
-        return (abs(from.x - to.x)===dir) && ((to.y-from.y)===2*dir);
+        console.log("from.x= " + from.x+ " from.y = "+ from.y + " to.x " + to.x + " to.y = " + to.y + " dir = " + dir);
+        var res = (abs(from.x - to.x)===1) && ((to.y-from.y)===2*dir);
+        var r1, r2;
+        r1 = (to.y-from.y)===2*dir;
+        r2 = abs(from.x - to.x)===dir;
+        console.log("(to.y-from.y)===2*dir: " + r1);
+        console.log("abs(from.x - to.x)===dir: " + r2);
+        console.log("res = " + res);
+        return res;
     }
     if(piece.p === "s") {
         return ((abs(to.x-from.x)===1 && abs(to.y-from.y)===1) || (to.y-from-y===dir && to.x===from.x));
