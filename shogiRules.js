@@ -65,8 +65,6 @@ InitPosition = [[bl,bn,bs,bg,bk,bg,bs,bn,bl],
                 [rp,rp,rp,rp,rp,rp,rp,rp,rp],
                 [0,rb,0,0,0,0,0,rr,0],
                 [rl,rn,rs,rg,rk,rg,rs,rn,rl]];
-//ToDropB = {};
-//ToDropR = {};
 
 ToDrop = {
     b:{p:0,l:0,n:0,s:0,g:0,b:0,r:0},
@@ -158,15 +156,11 @@ function add(v1,v2) {
         y:v1.y+v2.y
     };
     return res;
-    // var n = x.length;
-    // if(y.length !== n) {
-    //     return undefined;
-    // }
-    // var i, res = [];
-    // for(i=0;i<n;i++) {
-    //     res.push(x[i]+y[i]);
-    // }
-    // return res;
+}
+
+//tells if two squares are the same or not
+function eq(v1, v2) {
+    return v1.x === v2.x && v1.y === v2.y;
 }
 
 //tells if a square (represented by the coordinates [x,y]) belongs to the board
@@ -336,25 +330,23 @@ function reverseMove(x,y,piece,color) {
     
 }
 
-function checkNoGoThrough(ox,oy,nx,ny) {
-    var dir = [sign(nx - ox),sign( ny - oy)];
-    var tmpX = ox, tmpY =oy;
+//ensures there is no piece between the squares "from" and "to"
+function checkNoGoThrough(from,to) {
+    var dir = {
+        x:sign(to.x-from.x),
+        y:sign(to.y-from.y)
+    };
+//    var tmpX = from.x, tmpY =from.y;
+    var tmp = add(from,dir);
     //alert("tmpX = " + tmpX + ", tmpY = " + tmpY + " , nx = "+ nx + " , ny = "+ny );
     //document.getElementById("debugInfo").innerHTML = "ox = "+ ox+ ", dir = "+dir;
-    var ex = nx  - dir[0], ey = ny - dir[1];
-    while(tmpX !== ex || tmpY !== ey) {
-	//alert("inside while");
-	tmpX = tmpX+dir[0];
-	tmpY = tmpY+dir[1];
-	//alert(board[tmpX][tmpY]);
-	
-	
-	if(board[tmpY][tmpX] !== 0) {
-	    document.getElementById("debugInfo").innerHTML ="tmpX = " + tmpX +  ", board[tmpX][tmpY] = "+ board[tmpY][tmpX]+", tmpY= "+tmpY+", dir = " + dir+", ex = " + ex + ", ey = " +ey+ ", oy = " + oy+ ", ny = " + ny;
-	    return false;
-	}
+    //var ex = to.x  - dir.x, ey = ny - dir[1];
+    while(!eq(tmp,to)) {
+        if(position[tmp.y][tmp.x] !== 0) {
+            return false;
+        }
+        tmp = add(tmp,dir);
     }
-    var piece = board[oy][ox];
     return true;//checkNotSameColorPiece(piece, nx,ny);
 }
 
@@ -387,6 +379,9 @@ function checkMating() {
 
 //given the position initPosition, ensure that droping the piece "piece" on the square "to" is legal
 function checkDropValidity(initPosition,to,color,toDrop,piece) {
+    if(initPosition[to.y][to.x] !== 0) {
+        return false;
+    }
     if(!inArray(["n","l","p"],piece.p)) {
         return true;
     }
@@ -399,6 +394,17 @@ function checkDropValidity(initPosition,to,color,toDrop,piece) {
     if(piece.p === "p") {
         if(to.y === lastRow(piece.col)) {
             return false;
+        }
+        //ensure there is no pawn of the same color on the column of the drop
+        var k,tmp; 
+        for(k=0;k<nSquares;k++) {
+            tmp = InitPosition[k][to.x];
+            if(tmp === 0) {
+                continue;
+            }
+            if(tmp.col === piece.col && tmp.p === "p") {
+                return false;
+            }
         }
         return !checkMating();
     }
@@ -425,11 +431,14 @@ function checkMoveValidity(initPosition, from, to) {
     //if(piece.col === "r" ) {
        // dir = -1;
     //}
+    if(initPosition[to.y][to.x] === Color) {
+        return false;
+    }
     if(piece.p === "p") {
         return (from.x === to.x )&& ((to.y-from.y) === dir);
     }
     if(piece.p === "l") {
-        return (from.x === to.x) && (sign(to.y - from.y) === dir);
+        return (from.x === to.x) && (sign(to.y - from.y) === dir) && checkNoGoThrough(from, to);
     }
     if(piece.p ==="n") {
         console.log("from.x= " + from.x+ " from.y = "+ from.y + " to.x " + to.x + " to.y = " + to.y + " dir = " + dir);
@@ -449,7 +458,7 @@ function checkMoveValidity(initPosition, from, to) {
         return (abs(to.x-from.x) + abs(to.y-from.y) === 1) || (abs(to.x-from.x)===1 && to.y-from.y===dir);
     }
     if(piece.p=== "r") {
-        return (from.x === to.x || from.y === to.y);
+        return (from.x === to.x || from.y === to.y) && checkNoGoThrough(from, to);
     }
     if(piece.p === "b") {
         console.log("checking for bishop move");
@@ -459,16 +468,16 @@ function checkMoveValidity(initPosition, from, to) {
         if(!moveOK) {
             alert("illegal move!");
         }
-        return moveOK;
+        return moveOK && checkNoGoThrough(from, to);
     }
     if(piece.p === "k") {
         return abs(to.x - from.x) <= 1 && abs(to.y-from.y)<=1;
     }
     if(piece.p === "h") {
-        return (abs(to.x - from.x) <= 1 && abs(to.y-from.y)<=1)||(abs(to.x - from.x) === abs(to.y - from.y));
+        return (abs(to.x - from.x) <= 1 && abs(to.y-from.y)<=1)||((abs(to.x - from.x) === abs(to.y - from.y)) && checkNoGoThrough(from, to));
     }
     if(piece.p === "d") {
-        return (abs(to.x - from.x) <= 1 && abs(to.y-from.y)<=1)||(from.x === to.x || from.y === to.y);
+        return (abs(to.x - from.x) <= 1 && abs(to.y-from.y)<=1)||((from.x === to.x || from.y === to.y) && checkNoGoThrough(from,to));
     }
     return false;
 }
@@ -624,9 +633,8 @@ function validateMove(initPosition, toDrop, from, to, color,piece) {
     return true;
 }
 
-
+//given a move (from square "from" to square "to") or a drop (of piece "piece"), update the current position.
 function updatePosition(from, to, drop, piece) {
-
     var res = makeMove(position, ToDrop, from, to, drop, piece);
     position = res.position;
     ToDrop = res.toDrop;

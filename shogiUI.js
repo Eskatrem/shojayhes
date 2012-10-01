@@ -13,7 +13,7 @@ YtoDropR = 650;
 
 //variables related to the state of the game (current position, color to play, list of pieces to drop)
 position = InitPosition;
-Color = "b";
+Color = "r";
 pieces = ["p","l","n","s","g","b","r"];
 
 function switchColor() {
