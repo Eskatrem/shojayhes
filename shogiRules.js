@@ -3,6 +3,8 @@ Pieces = ["p","l","n","s","g","k","b","r","pl","pn","ps","t","d","h"];
 PromotablePieces = ["p","l","n","s","b","r"];
 PromotedPieces = ["pl","pn","ps","t","h","d"];
 OneDirPieces = ["p", "l", "n"];
+Golds = ["g","t","pl","pn","ps"];
+
 
 bl = {
     p:"l",col:"b"
@@ -25,7 +27,7 @@ bb = {
 br = {
     p:"r", col:"b"
 };
-bp = {
+var bp = {
     p:"p", col:"b"
 };
 
@@ -55,6 +57,13 @@ rp = {
     p:"p", col:"r"
 };
 
+dirsN = [{x:-1, y:2}, {x:1,y:2}];
+dirsS = [{x:-1, y:-1}, {x:1, y:-1}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}];
+dirsG = [{x:0, y:-1},{x:-1,y:0},{x:1,y:0},{x:-1,y:1},{x:0,y:1},{x:1,y:1}];
+dirsK = [{x:-1, y:-1}, {x:0, y:-1}, {x:1, y:-1}, {x:-1, y:0}, {x:1, y:0}, {x:-1, y:1}, {x:0, y:1},{x:1,y:1}];
+dirsStraight = [{x:0, y:-1}, {x:-1, y:0}, {x:1, y:0}, {x:0, y:1}];
+dirsDiag = [{x:-1,y:-1}, {x:1, y:-1}, {x:-1,y:1},{x:1,y:-1}];
+
 
 InitPosition = [[bl,bn,bs,bg,bk,bg,bs,bn,bl],
                 [0,br,0,0,0,0,0,bb,0],
@@ -64,12 +73,25 @@ InitPosition = [[bl,bn,bs,bg,bk,bg,bs,bn,bl],
                 [0,0,0,0,0,0,0,0,0],
                 [rp,rp,rp,rp,rp,rp,rp,rp,rp],
                 [0,rb,0,0,0,0,0,rr,0],
-                [rl,rn,rs,rg,rk,rg,rs,rn,rl]];
+                [rl,rn,rs,rg,rk,rg,rs,rn,{p:"l",col:"r"}]];
 
 ToDrop = {
     b:{p:0,l:0,n:0,s:0,g:0,b:0,r:0},
     r:{p:0,l:0,n:0,s:0,g:0,b:0,r:0}
 };
+
+function dotProd(x1, x2) {
+    var res = {x: x1.x * x2.x, y: x1.y*x2.y};
+    return res;
+}
+
+function dimOK(x) {
+    return 0 <= x && x < Nsquares;
+}
+
+function inBoard(square) {
+    return dimOK(square.x) && dimOK(square.y);
+}
 
 //tells whether a piece *has* to promote
 function hasToPromote(piece, to) {
@@ -509,33 +531,65 @@ function getOriginalPiece(piece) {
 }
 
 //just makes a move, without worrying about its legality
-function makeMove(initPosition, toDrop, from, to, drop, piece) {
+//promotion handling is OK for UI (ask the user whether to promote), but not for the AI...
+function makeMove(initPosition, toDrop, from, to, drop, piece,prom ) {
     var newPosition = initPosition;
     var newToDrop = toDrop;
 //    var color = piece.col;
     console.log("makeMove: piece = " + piece);
+    console.log("makeMove: drop = " + drop);
+ 
     if(drop === undefined) {
         //in this case: no drop
         piece = initPosition[from.y][from.x];
-        color = piece.col;
-        if(hasToPromote(piece, to)) {
-            piece = promote(piece);
-        } else if(canPromote(piece, from, to)) {
-            var promotion = confirm("Promote piece?");
-            if(promotion) {
+        console.log("piece: ");
+        console.log( piece);
+        var color = piece.col;
+        console.log("color = " + color);
+        console.log("makeMove: toDrop:");
+        console.log(toDrop);
+        console.log("makeMove: newToDrop");
+        console.log(newToDrop);
+        newPosition[from.y][from.x] = 0;
+        if(prom === undefined) {
+            if(hasToPromote(piece, to)) {
+                piece = promote(piece);
+            } else if(canPromote(piece, from, to)) {
+                var promotion = confirm("Promote piece?");
+                if(promotion) {
+                    piece = promote(piece);
+                }
+            }
+            console.log("done with promotion stuff...");    
+        } else if(prom) {
+            if(hasToPromote(piece, to)) {
+                piece = promote(piece);
+            } else if(canPromote(piece, from, to)) {
+                piece = promote(piece);
+            }
+        } else {
+            if(hasToPromote(piece, to)) {
                 piece = promote(piece);
             }
         }
-        if(initPosition[to.y][to.x] !==0) {
+        console.log("initPosition[to.y][to.x]:");
+        console.log(initPosition[to.y][to.x]);
+        if(typeof(initPosition[to.y][to.x]) !== undefined && initPosition[to.y][to.x] !==0 && initPosition[to.y][to.x] !== undefined) {
             //in this case a piece is been captured...
+            console.log("piece captured...");
             var captured = initPosition[to.y][to.x].p;
+            console.log("captured = " + captured);
             var newPiece = getOriginalPiece(captured);
+            console.log("newPiece = " + newPiece);
+            console.log("newToDrop: " + newToDrop[color]);
             newToDrop[color][newPiece]++;
+            
         }
-        newPosition[from.y][from.x] = 0;
+
     } else {
+        console.log("makeMove when it's a drop");
         console.log("makeMove: piece = " + piece);
-        newToDrop[Color][piece.p]--;
+        newToDrop[color][piece.p]--;
         newPosition[to.y][to.x] = piece;
     }
     newPosition[to.y][to.x] = piece;    
@@ -545,6 +599,8 @@ function makeMove(initPosition, toDrop, from, to, drop, piece) {
 //        newToDrop[color][captured.p]++;
 //    }
     var res = {position: newPosition, toDrop: newToDrop};
+    console.log("finished makeMove!");
+    console.log("toDrop to be returned: " + res.toDrop[color]["b"]);
     return res;
 }
 
@@ -638,4 +694,36 @@ function updatePosition(from, to, drop, piece) {
     var res = makeMove(position, ToDrop, from, to, drop, piece);
     position = res.position;
     ToDrop = res.toDrop;
+}
+
+function getSquare(position, square) {
+    return position[square.y][square.x];
+}
+
+//from position, color and initSquare, return a function that takes a direction and extend it, starting from initSquare, until either it goes out of the board, either it reaches a piece
+function makeDirectionExtension(position, color, initSquare) {
+    var res = function(dir) {
+        var result = [];
+        var tmp = add(initSquare,dir);
+        while(inBoard(tmp) && getSquare(position,tmp) === 0) {//color) {
+            result.push({from:initSquare, to:tmp});
+            tmp = add(tmp, dir);
+        }
+        if(inBoard(tmp)) {
+            if(getSquare(position,tmp).col !== color) {
+                result.push({from:initSquare, to:tmp});
+            }
+        } else {
+            console.log("out of board...");
+        }
+        return result;
+    };
+    return res;
+}
+
+function changeColor(color) {
+    if(color === "b") {
+        return "r";
+    }
+    return "b";
 }

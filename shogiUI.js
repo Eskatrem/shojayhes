@@ -123,6 +123,10 @@ function upMove() {
     y = this.attr("y");
     endSquare = coordToSquare([x, y]);
     console.log("endSquare = " + endSquare);
+    if(eq(endSquare,startSquare)) {
+        this.attr({x:ox,y:oy});
+        return;
+    }
     var moveOK = checkMoveValidity(position, startSquare, endSquare);//, col, p);
     if(moveOK) {
         //this.attr({x:this.ox+this.dx,y:this.oy+this.dy});
@@ -131,6 +135,12 @@ function upMove() {
         eraseBoard();
         eraseToDrop(ToDrop,Color);
         updatePosition(startSquare, endSquare);
+        drawPosition(position);
+        drawToDrop(ToDrop,Color);
+        switchColor();
+        dumbAI();
+        eraseBoard();
+        eraseToDrop(ToDrop,Color);
         drawPosition(position);
         drawToDrop(ToDrop,Color);
         switchColor();
